@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 config = {
     'general': {
-        'experiment_name' : 'baseline',
+        'experiment_name' : 'dl',
         'seed': 42,
         'target': 'Survived',
         'metric': 'accuracy',
@@ -93,6 +93,12 @@ config = {
                 'thread_count': -1,
             },
         },
+    },
+        
+    'dl': {
+        'learning_rate': 0.001,
+        'batch_size': 32,
+        'epochs': 100,
     },
 }
 

@@ -1,13 +1,17 @@
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from omegaconf import OmegaConf
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 
 from config import config
-from preprocessing import Preprocessor
 
+import torch
+from dl import prepare_data, MLP, train_model
 
 def main():
     print('Loading data')
@@ -17,27 +21,46 @@ def main():
 
     target = config.general.target
 
-    X_train = train.drop(columns=[target])
-    y_train = train[target]
+    X = train.drop(columns=[target])
+    y = train[target]
     X_test = test.copy()
 
     print('Loading finished')
 
-    model_params = OmegaConf.to_container(
-        config.models.logistic_regression.params,
-        resolve=True
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    X_train, X_val, y_train, y_val = train_test_split(
+        X,
+        y,
+        test_size=config.split.test_size,
+        random_state=config.general.seed,
+        stratify=y
     )
 
-    pipeline = Pipeline([
-        ('preprocessing', Preprocessor()),
-        ('model', LogisticRegression(**model_params)),
-    ])
+    train_dataset, val_dataset, preprocessor, scaler = prepare_data(X_train, X_val, y_train, y_val)
+
+    X_test = preprocessor.transform(test)
+    X_test = scaler.transform(X_test).astype(np.float32)
 
     print('Starting training')
 
-    pipeline.fit(X_train, y_train)
-    
-    predictions = pipeline.predict(X_test)
+    model = MLP(
+        input_dim=train_dataset.tensors[0].shape[1]
+    ).to(device)
+
+    best_model_state = train_model(model, train_dataset, val_dataset, device)
+
+    model.load_state_dict(best_model_state)
+
+    model.eval()
+
+    X_test_tensor = torch.tensor(
+        X_test, dtype=torch.float32
+    ).to(device)
+
+    with torch.no_grad():
+        logits = model(X_test_tensor)
+        predictions = (logits >= 0).int().cpu().numpy()
 
     submission = pd.DataFrame({
         'PassengerId': test['PassengerId'],
