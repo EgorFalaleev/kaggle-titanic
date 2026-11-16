@@ -88,7 +88,11 @@ def encode_features(data: pd.DataFrame) -> pd.DataFrame:
 
     data['Sex'] = data['Sex'].map(SEX_MAPPING)
     data['Embarked'] = data['Embarked'].map(EMBARKED_MAPPING)
-    data['Initial'] = data['Initial'].map(TITLE_ENCODING)
+    data['Initial'] = (
+    data['Initial']
+    .where(data['Initial'].isin(TITLE_ENCODING), 'Other')
+    .map(TITLE_ENCODING)
+)
 
     return data
 
