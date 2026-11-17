@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 config = {
     'general': {
-        'experiment_name' : 'dl_dropout',
+        'experiment_name' : 'catboost',
         'seed': 42,
         'target': 'Survived',
         'metric': 'accuracy',
@@ -58,8 +58,9 @@ config = {
         'random_forest': {
             'enabled': True,
             'params': {
-                'n_estimators': 100,
-                'max_depth': 4,
+                'n_estimators': 300,
+                'max_depth': 5,
+                'min_samples_leaf': 4,
                 'random_state': '${general.seed}',
                 'n_jobs': -1,
             },
@@ -68,10 +69,10 @@ config = {
         'xgboost': {
             'enabled': True,
             'params': {
-                'n_estimators': 1000,
-                'learning_rate': 0.001,
+                'n_estimators': 200,
+                'learning_rate': 0.05,
                 'max_depth': 4,
-                'min_child_weight': 2,
+                'min_child_weight': 3,
                 'gamma': 0.9,
                 'subsample': 0.8,
                 'colsample_bytree': 0.8,
