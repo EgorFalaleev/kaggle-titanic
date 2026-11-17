@@ -8,14 +8,41 @@ from preprocessing import Preprocessor
 from config import config
 
 class MLP(nn.Module):
-    def __init__(self, input_dim):
+    def __init__(
+        self,
+        input_dim,
+        use_batchnorm=False,
+        use_dropout=False,
+        dropout_rate=0.2,
+    ):
         super().__init__()
 
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, 16),
-            nn.ReLU(),
-            nn.Linear(16, 1)
-        )
+        layers = []
+
+        layers.append(nn.Linear(input_dim, 64, bias=not use_batchnorm))
+
+        if use_batchnorm:
+            layers.append(nn.BatchNorm1d(64))
+
+        layers.append(nn.ReLU())
+
+        if use_dropout:
+            layers.append(nn.Dropout(dropout_rate))
+
+        layers.append(nn.Linear(64, 32, bias=not use_batchnorm))
+
+        if use_batchnorm:
+            layers.append(nn.BatchNorm1d(32))
+
+        layers.append(nn.ReLU())
+
+        if use_dropout:
+            layers.append(nn.Dropout(dropout_rate))
+
+        layers.append(nn.Linear(32, 1))
+
+        self.network = nn.Sequential(*layers)
+
 
     def forward(self, x):
         return self.network(x).squeeze(-1)
@@ -31,7 +58,11 @@ def train_model(model, train_dataset, val_dataset, device):
     train_loader = DataLoader(
         train_dataset,
         batch_size=config.dl.batch_size,
-        shuffle=True
+        shuffle=True,
+        drop_last=any(
+            isinstance(layer, nn.BatchNorm1d)
+            for layer in model.modules()
+        )
     )
 
     val_loader = DataLoader(
@@ -42,9 +73,12 @@ def train_model(model, train_dataset, val_dataset, device):
 
     best_val_loss = float('inf')
     best_model_state = None
+    best_epoch = 0
 
     patience = 5
     epochs_without_improvement = 0
+
+    history = []
 
     for epoch in range(config.dl.epochs):
         train_loss = train_one_epoch(
@@ -54,6 +88,13 @@ def train_model(model, train_dataset, val_dataset, device):
         val_metrics = evaluate(
             model, val_loader, criterion, device
         )
+
+        history.append({
+            'epoch': epoch + 1,
+            'train_loss': train_loss,
+            'val_loss': val_metrics['loss'],
+            'val_accuracy': val_metrics['accuracy']
+        })
 
         print(
             f"Epoch {epoch + 1}/{config.dl.epochs} | "
@@ -65,6 +106,7 @@ def train_model(model, train_dataset, val_dataset, device):
         if val_metrics['loss'] < best_val_loss:
             best_val_loss = val_metrics['loss']
             best_model_state = copy.deepcopy(model.state_dict())
+            best_epoch = epoch + 1
             epochs_without_improvement = 0
         else:
             epochs_without_improvement += 1
@@ -73,7 +115,7 @@ def train_model(model, train_dataset, val_dataset, device):
             print(f"Early stopping at epoch {epoch + 1}")
             break
 
-    return best_model_state
+    return best_model_state, history, best_epoch
 
 
 def train_one_epoch(model, dataloader, optimizer, criterion, device):

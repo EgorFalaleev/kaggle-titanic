@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 config = {
     'general': {
-        'experiment_name' : 'catboost',
+        'experiment_name' : 'dl_dropout',
         'seed': 42,
         'target': 'Survived',
         'metric': 'accuracy',
@@ -100,6 +100,9 @@ config = {
         'learning_rate': 0.001,
         'batch_size': 32,
         'epochs': 100,
+        'use_batchnorm': False,
+        'use_dropout': True,
+        'dropout_rate': 0.2,
     },
 
     'tuning': {
