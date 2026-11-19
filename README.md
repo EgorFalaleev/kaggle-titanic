@@ -20,8 +20,14 @@ pip install -r requirements.txt
 
 Запуск инференса с формированием файла решения:
 
+Для Classic ML моделей:
 ```bash
 python main.py
+```
+
+Для Deep Learning моделей:
+```bash
+python main_dl.py
 ```
 
 Файл с решением сохраняется в папку `submissions/`
