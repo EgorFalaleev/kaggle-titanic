@@ -39,6 +39,11 @@ TITLE_ENCODING = {
 
 
 def handle_missing_values(data, age_median, fare_median):
+    """Extract title from Name and fill Age, Fare and Embarked.
+
+    Age is filled by the typical age of the title, then by ``age_median``;
+    Fare by ``fare_median`` (both medians are learned on train).
+    """
     data = data.copy()
 
     data['Initial'] = data['Name'].str.extract(
@@ -98,6 +103,7 @@ def encode_features(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def drop_features(data: pd.DataFrame) -> pd.DataFrame:
+    """Drop raw columns that are replaced by engineered features or unused."""
     columns_to_drop = [
         'Name',
         'Age',
@@ -110,22 +116,16 @@ def drop_features(data: pd.DataFrame) -> pd.DataFrame:
     return data.drop(columns=columns_to_drop, errors='ignore')
 
 
-def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
-    data = handle_missing_values(data)
-    data = create_features(data)
-    data = encode_features(data)
-    data = drop_features(data)
-
-    return data
-
 class Preprocessor(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
+        """Learn Age and Fare medians from the training data."""
         self.age_median = X['Age'].median()
         self.fare_median = X['Fare'].median()
 
         return self
 
     def transform(self, X):
+        """Return the model-ready numeric DataFrame for X."""
         X = handle_missing_values(
             X,
             age_median=self.age_median,

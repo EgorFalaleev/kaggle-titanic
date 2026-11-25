@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 config = {
     'general': {
-        'experiment_name' : 'catboost',
+        'model': 'catboost',
         'seed': 42,
         'target': 'Survived',
         'metric': 'accuracy',
@@ -14,9 +14,7 @@ config = {
     'paths': {
         'train_data': str(BASE_DIR / 'data' / 'train.csv'),
         'test_data': str(BASE_DIR / 'data' / 'test.csv'),
-        'submission': (
-            BASE_DIR / 'submissions' / '${general.experiment_name}.csv'
-        ).as_posix(),
+        'submissions_dir': (BASE_DIR / 'submissions').as_posix(),
     },
 
     'split': {

@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 from sklearn.model_selection import StratifiedKFold, cross_val_score
@@ -13,6 +12,10 @@ SCALED_MODELS = {'logistic_regression', 'knn'}
 
 
 def create_pipeline(name, config):
+    """Build the full pipeline (Preprocessor [+ scaler] + model) by model name.
+
+    Scaling is added only for models that need it (``SCALED_MODELS``).
+    """
     steps = [
         ('preprocessing', Preprocessor()),
     ]
@@ -25,13 +28,38 @@ def create_pipeline(name, config):
     return Pipeline(steps)
 
 
-def compare_models(X, y, config):
-    cv = StratifiedKFold(
+def make_cv(config):
+    return StratifiedKFold(
         n_splits=config.split.n_splits,
         shuffle=config.split.shuffle,
         random_state=config.general.seed,
     )
 
+
+def cross_validate_pipeline(pipeline, X, y, config):
+    """Cross-validate a full pipeline.
+
+    Returns the per-fold scores and their mean and std for
+    ``config.general.metric``.
+    """
+    scores = cross_val_score(
+        pipeline,
+        X,
+        y,
+        cv=make_cv(config),
+        scoring=config.general.metric,
+        n_jobs=1,
+    )
+
+    return {
+        'scores': scores,
+        'mean': float(scores.mean()),
+        'std': float(scores.std()),
+    }
+
+
+def compare_models(X, y, config):
+    """Cross-validate every enabled model; return a table sorted by mean score."""
     results = []
 
     for name, model_config in config.models.items():
@@ -39,20 +67,12 @@ def compare_models(X, y, config):
             continue
 
         pipeline = create_pipeline(name, config)
-
-        scores = cross_val_score(
-            pipeline,
-            X,
-            y,
-            cv=cv,
-            scoring=config.general.metric,
-            n_jobs=1,
-        )
+        cv_result = cross_validate_pipeline(pipeline, X, y, config)
 
         results.append({
             'Model': name,
-            'CV Mean': scores.mean(),
-            'CV Std': scores.std(),
+            'CV Mean': cv_result['mean'],
+            'CV Std': cv_result['std'],
         })
 
     return (

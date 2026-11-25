@@ -2,7 +2,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from omegaconf import OmegaConf
 
 from sklearn.model_selection import train_test_split
 
@@ -43,7 +42,10 @@ def main():
     print('Starting training')
 
     model = MLP(
-        input_dim=train_dataset.tensors[0].shape[1]
+        input_dim=train_dataset.tensors[0].shape[1],
+        use_batchnorm=config.dl.use_batchnorm,
+        use_dropout=config.dl.use_dropout,
+        dropout_rate=config.dl.dropout_rate
     ).to(device)
 
     best_model_state, _, _ = train_model(model, train_dataset, val_dataset, device)
@@ -65,7 +67,12 @@ def main():
         'Survived': predictions.astype(int),
     })
 
-    submission_path = Path(config.paths.submission)
+    # name reflects the DL mode so it never overwrites a classic submission
+    suffix = ''.join([
+        '_bn' if config.dl.use_batchnorm else '',
+        '_dropout' if config.dl.use_dropout else '',
+    ])
+    submission_path = Path(config.paths.submissions_dir) / f'mlp{suffix}.csv'
     submission_path.parent.mkdir(parents=True, exist_ok=True)
 
     submission.to_csv(submission_path, index=False)

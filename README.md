@@ -25,7 +25,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Модель выбирается в зависимости от поля `general.model` в файле `config.py`
+
+
+
 Для Deep Learning моделей:
+
 ```bash
 python main_dl.py
 ```

@@ -1,4 +1,3 @@
-
 from omegaconf import OmegaConf
 
 from sklearn.linear_model import LogisticRegression
@@ -21,11 +20,15 @@ MODEL_MAP = {
 
 
 def create_model(name, config):
-    model_class = MODEL_MAP[name]
+    """Create a classifier by ``name`` with params from ``config.models[name]``."""
+    if name not in MODEL_MAP:
+        raise ValueError(
+            f"Unknown model '{name}'. Available: {', '.join(MODEL_MAP)}"
+        )
 
     params = OmegaConf.to_container(
         config.models[name].params,
         resolve=True
     )
 
-    return model_class(**params)
+    return MODEL_MAP[name](**params)

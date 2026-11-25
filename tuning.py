@@ -8,6 +8,7 @@ from evaluation import create_pipeline
 
 
 def tune_model(name, X, y, config):
+    """Grid-search one model's pipeline with stratified CV; return the fitted search."""
     pipeline = create_pipeline(name, config)
 
     param_grid = OmegaConf.to_container(
@@ -37,6 +38,7 @@ def tune_model(name, X, y, config):
 
 
 def tune_all_models(X, y, config):
+    """Tune every enabled model; return (results table, best estimators by name)."""
     results = []
     best_models = {}
 
